@@ -1,5 +1,7 @@
 import asyncio
+import sys
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import redirect_stdout
 from errno import ECONNRESET
 from functools import partial
 from types import SimpleNamespace as Show
@@ -106,16 +108,17 @@ class Downloader:
             'outtmpl': f'{dl_path}/{youtube_dl.utils.DEFAULT_OUTTMPL}',
         }
 
-        with youtube_dl.YoutubeDL(opts) as yt:
-            try:
-                result = yt.download([show.url])
-            except youtube_dl.utils.DownloadError:
-                result = 1
+        with redirect_stdout(sys.stderr):
+            with youtube_dl.YoutubeDL(opts) as yt:
+                try:
+                    result = yt.download([show.url])
+                except youtube_dl.utils.DownloadError:
+                    result = 1
 
-        if result:
-            print(f'Error while downloading: {show.url}')
-        else:
-            print(f'Download finish: {show.name}')
+            if result:
+                print(f'Error while downloading: {show.url}')
+            else:
+                print(f'Download finish: {show.name}')
 
     async def extractor(self, html):
         html = html.replace('<!--', '').replace('-->', '')
@@ -195,7 +198,8 @@ class Downloader:
                     if show in self.wanted_shows:
                         self.workers.submit(self.download, show)
                 else:
-                    await aprint(f'Invalid {pid!r} | {name!r} | {url!r}')
+                    msg = f'Invalid {pid!r} | {name!r} | {url!r}'
+                    await aprint(msg, use_stderr=True)
 
             await asyncio.sleep(self.settings['cooldown'])
 
@@ -206,7 +210,8 @@ class Downloader:
             except asyncio.exceptions.CancelledError:
                 self.save_seen_posts()
                 if len(self.workers._threads):
-                    print('Waiting for download(s) to finish ...')
+                    msg = 'Waiting for downloads to finish ...'
+                    print(msg, file=sys.stderr)
 
 
 def main():
