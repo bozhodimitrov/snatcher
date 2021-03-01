@@ -1,0 +1,25 @@
+[last]
+post-id = "https://example.url"
+
+[settings]
+cache = 32
+cooldown = 10
+workers = 5
+retries = 3
+ytdl_format = "bestvideo+bestaudio/best"
+download_dir = "/example/dir/path"
+url = "https://example.source.url"
+shows = [ "Example Title",]
+source_priority = [ "example.domain.com",]
+
+[settings.headers]
+Accept = "text/html,application/xhtml+xml,application/xml"
+Accept-Encoding = "gzip, deflate, br"
+Accept-Language = "en-US,en;q=0.5"
+Cookie = "remixmdevice=1920/1080/1/!!-!!!!"
+User-Agent = "Linux"
+
+[settings.path]
+content = "//div[@class='wall_item']"
+links = "descendant::div[@class='pi_text']//a/text()"
+name = "descendant::div[@class='pi_text']//text()"

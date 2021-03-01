@@ -23,10 +23,6 @@ from lxml.html import fromstring
 from lxml.html import HTMLParser
 
 
-asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-CONFIG_FILE = 'config.toml'
-
 HTTP_EXCEPTIONS = (
     ClientOSError,
     ClientPayloadError,
@@ -62,7 +58,8 @@ class Wanted(set):
 
 
 class Downloader:
-    def __init__(self):
+    def __init__(self, config='config.toml'):
+        self.config_file = config
         self.config = self.load_config()
         self.settings = self.config['settings']
 
@@ -83,12 +80,12 @@ class Downloader:
 
     def load_config(self):
         try:
-            return toml.load(CONFIG_FILE)
+            return toml.load(self.config_file)
         except (OSError, toml.TomlDecodeError):
             raise SystemExit('Invalid config')
 
     def save_seen_posts(self):
-        with open(CONFIG_FILE, 'w') as f:
+        with open(self.config_file, 'w') as f:
             self.config['last'].update(self.seen_posts)
             toml.dump(self.config, f)
 
@@ -193,7 +190,6 @@ class Downloader:
 
                 if url and name:
                     await aprint(f'{name}\n{url}')
-
                     show = Show(name=name, pid=pid, url=url, title='')
                     if show in self.wanted_shows:
                         self.workers.submit(self.download, show)
@@ -215,6 +211,8 @@ class Downloader:
 
 
 def main():
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
     try:
         asyncio.run(Downloader().run())
     except KeyboardInterrupt:
