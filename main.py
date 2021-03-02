@@ -37,7 +37,7 @@ class Cache(LRUCache):
         try:
             key, data = value
         except ValueError:
-            key, data = value, None
+            key, data = value, ''
 
         found = super().__contains__(key)
         self[key] = data
@@ -85,8 +85,8 @@ class Downloader:
             raise SystemExit('Invalid config')
 
     def save_seen_posts(self):
+        self.config['last'].update(self.seen_posts)
         with open(self.config_file, 'w') as f:
-            self.config['last'].update(self.seen_posts)
             toml.dump(self.config, f)
 
     def dl_link(self, links):
@@ -97,6 +97,8 @@ class Downloader:
             for link in links:
                 if src in link:
                     return str(link)
+        else:
+            return ''
 
     def download(self, show):
         dl_path = f'{self.settings["download_dir"]}/{show.title}'
