@@ -100,7 +100,7 @@ class Downloader:
         else:
             return ''
 
-    def download(self, show):
+    def download(self, show, retries=0):
         dl_path = f'{self.settings["download_dir"]}/{show.title}'
         opts = {
             **self.default_ytdl_opts,
@@ -113,9 +113,14 @@ class Downloader:
                     result = yt.download([show.url])
                 except youtube_dl.utils.DownloadError:
                     result = 1
+                finally:
+                    retries += 1
 
             if result:
-                print(f'Error while downloading: {show.url}')
+                if retries < self.settings['retries']:
+                    self.download(show, retries)
+                else:
+                    print(f'Error while downloading: {show.url}')
             else:
                 print(f'Download finish: {show.name}')
 
