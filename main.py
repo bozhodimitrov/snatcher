@@ -207,6 +207,8 @@ class Downloader:
             await asyncio.sleep(self.settings['cooldown'])
 
     async def run(self):
+        _wakeup()
+
         with self.workers:
             try:
                 await self.fetch()
@@ -215,6 +217,11 @@ class Downloader:
                 if len(self.workers._threads):
                     msg = 'Waiting for downloads to finish ...'
                     print(msg, file=sys.stderr)
+
+
+def _wakeup(interval=0.3):
+    # Fix for better handling of SIGINT (Ctrl-C) on Windows
+    asyncio.get_event_loop().call_later(interval, _wakeup)
 
 
 def main():
