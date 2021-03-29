@@ -100,7 +100,7 @@ class Downloader:
         else:
             return ''
 
-    def download(self, show, retries=0):
+    def download(self, show):
         dl_path = f'{self.settings["download_dir"]}/{show.title}'
         opts = {
             **self.default_ytdl_opts,
@@ -109,20 +109,19 @@ class Downloader:
 
         with redirect_stdout(sys.stderr):
             with youtube_dl.YoutubeDL(opts) as yt:
-                try:
-                    result = yt.download([show.url])
-                except youtube_dl.utils.DownloadError:
-                    result = 1
-                finally:
-                    retries += 1
+                for _ in range(self.settings['retries']):
+                    try:
+                        result = yt.download([show.url])
+                    except youtube_dl.utils.DownloadError:
+                        result = 1
 
-            if result:
-                if retries < self.settings['retries']:
-                    self.download(show, retries)
-                else:
-                    print(f'Error while downloading: {show.url}')
-            else:
+                    if result == 0:
+                        break
+
+            if result == 0:
                 print(f'Download finish: {show.name}')
+            else:
+                print(f'Error while downloading: {show.url}')
 
     async def extractor(self, html):
         html = html.replace('<!--', '').replace('-->', '')
