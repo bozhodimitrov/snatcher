@@ -16,6 +16,7 @@ from aiohttp import ClientTimeout
 from aiohttp import InvalidURL
 from aiohttp import TCPConnector
 from cachetools import LRUCache
+from editdistance_s import distance
 from lxml.etree import ParserError
 from lxml.etree import strip_elements
 from lxml.etree import XMLSyntaxError
@@ -49,12 +50,22 @@ class Wanted(set):
         self.items = {item.lower(): item for item in items}
 
     def __contains__(self, value):
+        lowercase_value = value.name.lower()
         for item in self.items:
-            if item in value.name.lower():
+            if item in lowercase_value or self.similar(item, lowercase_value):
                 value.title = self.items[item]
                 return True
         else:
             return False
+
+    @staticmethod
+    def similar(item, value):
+        half_length = len(value) // 2
+        quarter_length = len(value) // 4
+        return any(
+            distance(item[:i], value[:i]) < 5
+            for i in (half_length, quarter_length)
+        )
 
 
 class Downloader:
@@ -109,6 +120,7 @@ class Downloader:
 
         with redirect_stdout(sys.stderr):
             with youtube_dl.YoutubeDL(opts) as yt:
+                print(f'Downloading: {show.name}')
                 for _ in range(self.settings['retries']):
                     try:
                         result = yt.download([show.url])
