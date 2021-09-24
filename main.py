@@ -100,16 +100,14 @@ class Downloader:
         with open(self.config_file, 'w') as f:
             toml.dump(self.config, f)
 
-    def dl_link(self, links):
+    def dl_links(self, links):
         if isinstance(links, str):
             links = (links,)
 
         for src in self.settings['source_priority']:
             for link in links:
                 if src in link:
-                    return str(link)
-        else:
-            return ''
+                    yield str(link)
 
     def download(self, show):
         dl_path = f'{self.settings["download_dir"]}/{show.title}'
@@ -157,14 +155,14 @@ class Downloader:
                 raise SystemExit('Post ID not found')
 
             links = tag.xpath(self.settings['path']['links'])
-            link = self.dl_link(links)
+            raw_links = self.dl_links(links)
             strip_elements(tag, 'a')
             names = (
                 el.strip() for el in tag.xpath(self.settings['path']['name'])
             )
             name = ' '.join(el for el in names if el)
 
-            yield post_id, link, name
+            yield post_id, raw_links, name
 
     async def wall(self):
         options = dict(
@@ -202,18 +200,19 @@ class Downloader:
 
     async def fetch(self):
         while True:
-            async for pid, url, name in self.wall():
-                if (pid, url) in self.seen_posts:
+            async for pid, urls, name in self.wall():
+                if (pid, urls) in self.seen_posts:
                     continue
 
-                if url and name:
-                    await aprint(f'{name}\n{url}')
-                    show = Show(name=name, pid=pid, url=url, title='')
-                    if show in self.wanted_shows:
-                        self.workers.submit(self.download, show)
-                else:
-                    msg = f'Invalid {pid!r} | {name!r} | {url!r}'
-                    await aprint(msg, use_stderr=True)
+                for url in urls:
+                    if url and name:
+                        await aprint(f'{name}\n{url}')
+                        show = Show(name=name, pid=pid, url=url, title='')
+                        if show in self.wanted_shows:
+                            self.workers.submit(self.download, show)
+                    else:
+                        msg = f'Invalid {pid!r} | {name!r} | {url!r}'
+                        await aprint(msg, use_stderr=True)
 
             await asyncio.sleep(self.settings['cooldown'])
 
