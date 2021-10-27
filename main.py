@@ -118,7 +118,7 @@ class Downloader:
 
         with redirect_stdout(sys.stderr):
             with youtube_dl.YoutubeDL(opts) as yt:
-                print(f'Downloading: {show.name}')
+                print(f'Downloading: {show.name}', flush=True)
                 for _ in range(self.settings['retries']):
                     try:
                         result = yt.download([show.url])
@@ -129,9 +129,9 @@ class Downloader:
                         break
 
             if result == 0:
-                print(f'Download finish: {show.name}')
+                print(f'Download finish: {show.name}', flush=True)
             else:
-                print(f'Error while downloading: {show.url}')
+                print(f'Error while downloading: {show.url}', flush=True)
 
     async def extractor(self, html):
         html = html.replace('<!--', '').replace('-->', '')
@@ -183,7 +183,7 @@ class Downloader:
             except HTTP_EXCEPTIONS as e:
                 if isinstance(e, OSError) and e.errno != ECONNRESET:
                     err_msg = f'Connection error: {str(e)}'
-                    await aprint(err_msg, use_stderr=True)
+                    await aprint(err_msg, use_stderr=True, flush=True)
                 return
 
             async with resp:
@@ -206,13 +206,13 @@ class Downloader:
 
                 for url in urls:
                     if url and name:
-                        await aprint(f'{name}\n{url}')
+                        await aprint(f'{name}\n{url}', flush=True)
                         show = Show(name=name, pid=pid, url=url, title='')
                         if show in self.wanted_shows:
                             self.workers.submit(self.download, show)
                     else:
                         msg = f'Invalid {pid!r} | {name!r} | {url!r}'
-                        await aprint(msg, use_stderr=True)
+                        await aprint(msg, use_stderr=True, flush=True)
 
             await asyncio.sleep(self.settings['cooldown'])
 
@@ -226,7 +226,7 @@ class Downloader:
                 self.save_seen_posts()
                 if len(self.workers._threads):
                     msg = 'Waiting for downloads to finish ...'
-                    print(msg, file=sys.stderr)
+                    print(msg, file=sys.stderr, flush=True)
 
 
 def _wakeup(interval=0.3):
